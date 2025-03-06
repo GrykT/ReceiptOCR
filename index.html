@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>iPhoneカメラ映像取得プロトタイプ</title>
+  <title>カメラ映像取得プロトタイプ（切替・キャプチャ機能付き）</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,14 +11,15 @@
       padding: 20px;
       text-align: center;
     }
-    video {
+    video, canvas, img {
       width: 100%;
       max-width: 600px;
       border: 1px solid #ccc;
       border-radius: 4px;
+      margin-bottom: 10px;
     }
-    #capture-btn {
-      margin-top: 20px;
+    button {
+      margin: 10px;
       padding: 10px 20px;
       font-size: 16px;
     }
@@ -26,32 +27,94 @@
 </head>
 <body>
   <h1>カメラ映像取得プロトタイプ</h1>
+  <!-- カメラ映像表示用 -->
   <video id="video" autoplay playsinline></video>
-  <br>
-  <button id="capture-btn">キャプチャ</button>
+  <!-- キャプチャ画像表示用（キャプチャ後に利用） -->
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="capturedImage" style="display:none;" alt="Captured Image">
+
+  <!-- ボタン類 -->
+  <div>
+    <button id="toggleCamera">カメラ切替</button>
+    <button id="captureBtn">キャプチャ</button>
+  </div>
 
   <script>
-    // DOM要素の取得
     const video = document.getElementById('video');
-    const captureBtn = document.getElementById('capture-btn');
+    const canvas = document.getElementById('canvas');
+    const capturedImage = document.getElementById('capturedImage');
+    const toggleCameraBtn = document.getElementById('toggleCamera');
+    const captureBtn = document.getElementById('captureBtn');
 
-    // getUserMediaを利用してカメラ映像を取得
+    let currentFacingMode = "user"; // 初期はフロントカメラ
+    let currentStream = null;
+    let isStreamActive = false;
+
+    // カメラ開始
     async function startCamera() {
+      const constraints = {
+        video: { facingMode: { ideal: currentFacingMode } }
+      };
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        isStreamActive = true;
+        // キャプチャ後に表示していた画像とキャンバスは非表示に
+        capturedImage.style.display = "none";
+        canvas.style.display = "none";
+        video.style.display = "block";
+        captureBtn.textContent = "キャプチャ";
       } catch (error) {
         console.error('カメラの起動に失敗しました:', error);
         alert('カメラの起動に失敗しました。ブラウザの設定を確認してください。');
       }
     }
 
-    // キャプチャボタンのクリックイベント（後で静止画の取得などの処理を追加可能）
-    captureBtn.addEventListener('click', () => {
-      alert('キャプチャボタンがクリックされました。ここで静止画取得やOCR処理のロジックを追加できます。');
+    // カメラ停止
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        isStreamActive = false;
+      }
+    }
+
+    // カメラ切替
+    toggleCameraBtn.addEventListener('click', () => {
+      // ストリームが動作中の場合は停止
+      if (isStreamActive) {
+        stopCamera();
+      }
+      // facingModeを切り替え
+      currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+      // 再起動
+      startCamera();
     });
 
-    // ページ読み込み時にカメラを開始
+    // キャプチャ or ストリーム再開
+    captureBtn.addEventListener('click', () => {
+      if (isStreamActive) {
+        // 現在の映像をキャンバスに描画してキャプチャ画像として表示
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // キャンバスの内容を画像データとして取得
+        const imageData = canvas.toDataURL('image/png');
+        capturedImage.src = imageData;
+
+        // ストリーム停止してキャプチャ画像を表示
+        stopCamera();
+        video.style.display = "none";
+        canvas.style.display = "none";  // canvasはデバッグ用に隠す
+        capturedImage.style.display = "block";
+        captureBtn.textContent = "ストリーム再開";
+      } else {
+        // ストリームが停止している場合は再開
+        startCamera();
+      }
+    });
+
+    // ページ読み込み時にカメラ起動
     window.addEventListener('load', startCamera);
   </script>
 </body>
