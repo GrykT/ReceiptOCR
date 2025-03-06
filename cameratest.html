@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iPhoneカメラ映像取得プロトタイプ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    video {
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #capture-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>カメラ映像取得プロトタイプ</h1>
+  <video id="video" autoplay playsinline></video>
+  <br>
+  <button id="capture-btn">キャプチャ</button>
+
+  <script>
+    // DOM要素の取得
+    const video = document.getElementById('video');
+    const captureBtn = document.getElementById('capture-btn');
+
+    // getUserMediaを利用してカメラ映像を取得
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        console.error('カメラの起動に失敗しました:', error);
+        alert('カメラの起動に失敗しました。ブラウザの設定を確認してください。');
+      }
+    }
+
+    // キャプチャボタンのクリックイベント（後で静止画の取得などの処理を追加可能）
+    captureBtn.addEventListener('click', () => {
+      alert('キャプチャボタンがクリックされました。ここで静止画取得やOCR処理のロジックを追加できます。');
+    });
+
+    // ページ読み込み時にカメラを開始
+    window.addEventListener('load', startCamera);
+  </script>
+</body>
+</html>
