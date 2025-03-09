@@ -4,58 +4,109 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カメラキャプチャとOCR解析</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    video, canvas, img { width: 600px; height: 400px; border: 1px solid #ccc; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    #canvas, #capturedImage { display: none; }
+  </style>
 </head>
 <body>
   <h1>カメラキャプチャとOCR解析</h1>
-  <video id="video" width="600" height="400" autoplay></video>
-  <button id="capture">キャプチャ</button>
-  <canvas id="canvas" width="600" height="400" style="display:none;"></canvas>
-  <img id="capturedImage" src="" alt="Captured Image" style="display:none;">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas" width="600" height="400"></canvas>
+  <img id="capturedImage" alt="Captured Image">
+  <div>
+    <button id="toggleCamera">カメラ切替</button>
+    <button id="capture">キャプチャ</button>
+  </div>
   <div id="result"></div>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
-    const captureButton = document.getElementById('capture');
     const capturedImage = document.getElementById('capturedImage');
     const resultDiv = document.getElementById('result');
+    const toggleBtn = document.getElementById('toggleCamera');
+    const captureBtn = document.getElementById('capture');
 
-    // カメラの映像を取得
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => {
+    let currentFacingMode = "environment"; // 初期はリアカメラ
+    let currentStream = null;
+    let isStreamActive = false;
+
+    // カメラ起動関数
+    async function startCamera() {
+      try {
+        const constraints = { video: { facingMode: { ideal: currentFacingMode } } };
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        isStreamActive = true;
+        video.style.display = 'block';
+        capturedImage.style.display = 'none';
+        captureBtn.textContent = "キャプチャ";
+      } catch (err) {
         console.error('カメラの起動に失敗しました:', err);
-      });
+        alert('カメラの起動に失敗しました。ブラウザやHTTPS環境の設定を確認してください。');
+      }
+    }
 
-    // キャプチャボタンのクリックイベント
-    captureButton.addEventListener('click', () => {
-      // ビデオの現在のフレームをキャンバスに描画
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // カメラ停止関数
+    function stopCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        isStreamActive = false;
+      }
+    }
 
-      // キャンバスのデータを画像として表示
-      const dataUrl = canvas.toDataURL('image/png');
-      capturedImage.src = dataUrl;
-      capturedImage.style.display = 'block';
+    // ページロード時にカメラ起動
+    window.addEventListener('load', startCamera);
 
-      // 画像データをサーバーに送信してOCR解析
-      const formData = new FormData();
-      formData.append('image', dataURItoBlob(dataUrl), 'capture.png');
+    // カメラ切替ボタンの処理
+    toggleBtn.addEventListener('click', async () => {
+      // 既存のストリームがあれば停止
+      if (isStreamActive) {
+        stopCamera();
+      }
+      // facingMode の切替（"environment" と "user"）
+      currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+      await startCamera();
+    });
 
-      fetch('/upload', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        resultDiv.textContent = `解析結果: ${JSON.stringify(data)}`;
-      })
-      .catch(err => {
-        console.error('OCR解析中にエラーが発生しました:', err);
-        resultDiv.textContent = 'OCR解析中にエラーが発生しました。';
-      });
+    // キャプチャボタンの処理（キャプチャ → ストリーム停止 → 再開）
+    captureBtn.addEventListener('click', async () => {
+      if (isStreamActive) {
+        // 映像をキャンバスへ描画し、画像データ化
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        capturedImage.src = dataUrl;
+        capturedImage.style.display = 'block';
+        video.style.display = 'none';
+        captureBtn.textContent = "ストリーム再開";
+
+        // サーバへ画像データ送信（OCR解析）
+        const formData = new FormData();
+        formData.append('image', dataURItoBlob(dataUrl), 'capture.png');
+
+        fetch('/upload', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          resultDiv.textContent = `解析結果: ${JSON.stringify(data)}`;
+        })
+        .catch(err => {
+          console.error('OCR解析中にエラーが発生しました:', err);
+          resultDiv.textContent = 'OCR解析中にエラーが発生しました。';
+        });
+
+        // ストリーム停止
+        stopCamera();
+      } else {
+        // ストリームが停止している場合、再開
+        await startCamera();
+      }
     });
 
     // Data URI を Blob に変換する関数
