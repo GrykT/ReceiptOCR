@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カメラキャプチャとOCR解析</title>
+</head>
+<body>
+  <h1>カメラキャプチャとOCR解析</h1>
+  <video id="video" width="600" height="400" autoplay></video>
+  <button id="capture">キャプチャ</button>
+  <canvas id="canvas" width="600" height="400" style="display:none;"></canvas>
+  <img id="capturedImage" src="" alt="Captured Image" style="display:none;">
+  <div id="result"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const captureButton = document.getElementById('capture');
+    const capturedImage = document.getElementById('capturedImage');
+    const resultDiv = document.getElementById('result');
+
+    // カメラの映像を取得
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        console.error('カメラの起動に失敗しました:', err);
+      });
+
+    // キャプチャボタンのクリックイベント
+    captureButton.addEventListener('click', () => {
+      // ビデオの現在のフレームをキャンバスに描画
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // キャンバスのデータを画像として表示
+      const dataUrl = canvas.toDataURL('image/png');
+      capturedImage.src = dataUrl;
+      capturedImage.style.display = 'block';
+
+      // 画像データをサーバーに送信してOCR解析
+      const formData = new FormData();
+      formData.append('image', dataURItoBlob(dataUrl), 'capture.png');
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        resultDiv.textContent = `解析結果: ${JSON.stringify(data)}`;
+      })
+      .catch(err => {
+        console.error('OCR解析中にエラーが発生しました:', err);
+        resultDiv.textContent = 'OCR解析中にエラーが発生しました。';
+      });
+    });
+
+    // Data URI を Blob に変換する関数
+    function dataURItoBlob(dataURI) {
+      const byteString = atob(dataURI.split(',')[1]);
+      const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+      const buffer = new ArrayBuffer(byteString.length);
+      const data = new DataView(buffer);
+      for (let i = 0; i < byteString.length; i++) {
+        data.setUint8(i, byteString.charCodeAt(i));
+      }
+      return new Blob([buffer], { type: mimeString });
+    }
+  </script>
+</body>
+</html>

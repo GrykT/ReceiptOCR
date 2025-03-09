@@ -1,0 +1,215 @@
+{
+  "docType": "receipt.retailMeal",
+  "boundingRegions": [
+    {
+      "pageNumber": 1,
+      "polygon": [
+        0,
+        0,
+        600,
+        0,
+        600,
+        400,
+        0,
+        400
+      ]
+    }
+  ],
+  "fields": {
+    "CountryRegion": {
+      "type": "countryRegion",
+      "valueCountryRegion": "JPN",
+      "confidence": 0.995
+    },
+    "Items": {
+      "type": "array",
+      "valueArray": [
+        {
+          "type": "object",
+          "valueObject": {
+            "Description": {
+              "type": "string",
+              "valueString": "リース然さ",
+              "content": "リース然さ",
+              "boundingRegions": [
+                {
+                  "pageNumber": 1,
+                  "polygon": [
+                    377,
+                    202,
+                    458,
+                    196,
+                    459,
+                    212,
+                    378,
+                    218
+                  ]
+                }
+              ],
+              "confidence": 0.995,
+              "spans": [
+                {
+                  "offset": 60,
+                  "length": 5
+                }
+              ]
+            }
+          },
+          "content": "リース然さ",
+          "boundingRegions": [
+            {
+              "pageNumber": 1,
+              "polygon": [
+                377,
+                202,
+                458,
+                196,
+                459,
+                212,
+                378,
+                218
+              ]
+            }
+          ],
+          "confidence": 0.995,
+          "spans": [
+            {
+              "offset": 60,
+              "length": 5
+            }
+          ]
+        }
+      ]
+    },
+    "MerchantPhoneNumber": {
+      "type": "phoneNumber",
+      "valuePhoneNumber": "+81482410620",
+      "content": "TEL048-241-0620",
+      "boundingRegions": [
+        {
+          "pageNumber": 1,
+          "polygon": [
+            318,
+            58,
+            428,
+            41,
+            431,
+            58,
+            322,
+            76
+          ]
+        }
+      ],
+      "confidence": 0.995,
+      "spans": [
+        {
+          "offset": 0,
+          "length": 15
+        }
+      ]
+    },
+    "ReceiptType": {
+      "type": "string",
+      "valueString": "Supplies",
+      "confidence": 0.995
+    },
+    "Subtotal": {
+      "type": "currency",
+      "valueCurrency": {
+        "currencySymbol": "¥",
+        "amount": 656,
+        "currencyCode": "JPY"
+      },
+      "content": "¥656",
+      "boundingRegions": [
+        {
+          "pageNumber": 1,
+          "polygon": [
+            533,
+            290,
+            588,
+            285,
+            590,
+            300,
+            535,
+            304
+          ]
+        }
+      ],
+      "confidence": 0.995,
+      "spans": [
+        {
+          "offset": 77,
+          "length": 4
+        }
+      ]
+    },
+    "TaxDetails": {
+      "type": "array",
+      "valueArray": [
+        {
+          "type": "object",
+          "valueObject": {
+            "Description": {
+              "type": "string",
+              "valueString": "外税 S",
+              "content": "外税 S",
+              "boundingRegions": [
+                {
+                  "pageNumber": 1,
+                  "polygon": [
+                    351,
+                    270,
+                    406,
+                    267,
+                    407,
+                    282,
+                    352,
+                    286
+                  ]
+                }
+              ],
+              "confidence": 0.995,
+              "spans": [
+                {
+                  "offset": 72,
+                  "length": 4
+                }
+              ]
+            }
+          },
+          "content": "外税 S",
+          "boundingRegions": [
+            {
+              "pageNumber": 1,
+              "polygon": [
+                351,
+                270,
+                406,
+                267,
+                407,
+                282,
+                352,
+                286
+              ]
+            }
+          ],
+          "confidence": 0.995,
+          "spans": [
+            {
+              "offset": 72,
+              "length": 4
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "confidence": 0.995,
+  "spans": [
+    {
+      "offset": 0,
+      "length": 108
+    }
+  ]
+}
