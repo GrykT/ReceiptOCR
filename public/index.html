@@ -8,20 +8,30 @@
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
     video, canvas, img { max-width: 100%; border: 1px solid #ccc; }
     #canvas, #capturedImage { display: none; }
+    /* 追加: video と capturedImage を中央寄せ */
+    #video, #capturedImage {
+      display: block;
+      margin: 0 auto;
+      width: 600px; /* 必要に応じて幅を統一 */
+      height: auto;
+    }
   </style>
 </head>
 <body>
   <h1>カメラキャプチャとOCR解析</h1>
-  <video id="video" autoplay playsinline muted style="width:600px; height:auto;"></video>
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+  <img id="capturedImage" src="" alt="Captured Image">
   <br>
   <button id="toggleCamera">カメラ切替</button>
   <button id="capture">キャプチャ</button>
   <br>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="capturedImage" src="" alt="Captured Image" style="display:none;">
   <div id="result"></div>
+  <button id="saveButton" style="margin-top: 20px; padding: 8px 16px;">保存</button>
+  <textarea id="resultTextArea" rows="10" cols="50" style="width: 100%; margin-top: 10px;"></textarea>
 
   <script>
+    // 以下、既存のJavaScriptはそのまま
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
@@ -29,22 +39,20 @@
     const captureButton = document.getElementById('capture');
     const capturedImage = document.getElementById('capturedImage');
     const resultDiv = document.getElementById('result');
+    const resultTextArea = document.getElementById('resultTextArea');
+    const saveButton = document.getElementById('saveButton');
 
     let currentFacingMode = "environment"; // 初期はリアカメラ
     let currentStream = null;
     let isStreamActive = false;
 
     async function startCamera() {
-      // ストリームが存在すれば一度停止
-      if (currentStream) {
-        stopCamera();
-      }
+      if (currentStream) { stopCamera(); }
       const constraints = { video: { facingMode: { ideal: currentFacingMode } } };
       try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
         isStreamActive = true;
-        // キャプチャ画像を非表示、videoを表示
         capturedImage.style.display = "none";
         video.style.display = "block";
         captureButton.textContent = "キャプチャ";
@@ -61,7 +69,6 @@
       }
     }
 
-    // videoの表示サイズに合わせてcanvasのサイズを更新
     function updateCanvasSize() {
       canvas.width = video.clientWidth;
       canvas.height = video.clientHeight;
@@ -70,18 +77,15 @@
     video.addEventListener('loadedmetadata', updateCanvasSize);
     window.addEventListener('resize', updateCanvasSize);
 
-    // カメラ切替ボタン： 現在のストリームを停止し、facingModeを切り替えて再起動
     toggleButton.addEventListener('click', async () => {
       if (isStreamActive) { stopCamera(); }
       currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
       await startCamera();
     });
 
-    // キャプチャボタン： 動作中ならキャプチャしてストリーム停止、停止中なら再開
     captureButton.addEventListener('click', async () => {
       if (isStreamActive) {
         updateCanvasSize();
-        // videoの現在のフレームをcanvasに描画
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
         capturedImage.src = dataUrl;
@@ -89,7 +93,6 @@
         video.style.display = "none";
         captureButton.textContent = "ストリーム再開";
 
-        // 画像データ送信用（OCR解析用）の例
         const formData = new FormData();
         formData.append('image', dataURItoBlob(dataUrl), 'capture.png');
 
@@ -98,7 +101,22 @@
           body: formData
         })
         .then(response => response.json())
-        .then(data => { resultDiv.textContent = `解析結果: ${JSON.stringify(data)}`; })
+        .then(data => {
+          resultDiv.textContent = `解析結果: ${JSON.stringify(data)}`;
+          if (data) {
+            const raw = data.data;
+            const formattedDate = raw.date || '';
+            const formattedStore = raw.store || '';
+            const formattedTotal = raw.total || 0;
+            const formattedItems = Array.isArray(raw.items) ? raw.items.join('、') : '';
+
+            const resultLine = `${formattedDate},${formattedStore},${formattedTotal},${formattedItems}`;
+            if (resultTextArea.value && resultTextArea.value.trim() !== '') {
+              resultTextArea.value += '\n';
+            }
+            resultTextArea.value += resultLine;
+          }
+        })
         .catch(error => {
           console.error("OCR解析中にエラーが発生しました:", error);
           resultDiv.textContent = "OCR解析中にエラーが発生しました。";
@@ -110,7 +128,25 @@
       }
     });
 
-    // Data URI を Blob に変換する関数
+    saveButton.addEventListener('click', () => {
+      const textContent = resultTextArea.value;
+      fetch('/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: textContent })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert('保存しました');
+      })
+      .catch(error => {
+        console.error('保存中にエラーが発生しました:', error);
+        alert('保存中にエラーが発生しました');
+      });
+    });
+
     function dataURItoBlob(dataURI) {
       const byteString = atob(dataURI.split(',')[1]);
       const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
