@@ -1,5 +1,6 @@
 .env
 app.zip
 memo.md
+check.json
 uploads/
 node_modules/
