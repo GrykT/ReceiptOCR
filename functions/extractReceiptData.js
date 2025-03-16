@@ -10,6 +10,11 @@ exports.extractReceiptData = (receipt) => {
     total = receipt.fields.Subtotal.valueCurrency?.amount ?? receipt.fields.Subtotal.value ?? "unknown";
   }
 
+  // 数値が入っていればマイナスにする
+  if (typeof total === "number") {
+    total = -Math.abs(total);
+  }
+
   // アイテム抽出（存在しない場合は "unknown" を返す）
   let itemsArray = [];
   if (Array.isArray(receipt.fields?.Items?.valueArray)) {
